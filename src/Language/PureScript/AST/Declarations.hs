@@ -396,6 +396,14 @@ data Declaration
   --
   | TypeInstanceDeclaration Ident [Constraint] (Qualified (ProperName 'ClassName)) [Type] TypeInstanceBody
   -- |
+  -- A pattern synonym type declaration (name, required constraints, provided constraints, type)
+  --
+  | PatternSynonymTypeDeclaration (ProperName 'ConstructorName) [Constraint] [Constraint] Type
+  -- |
+  -- A pattern synonym declaration
+  --
+  | PatternSynonymDeclaration (NameKind, [Binder], Binder) (NameKind, [Binder], Expr)
+  -- |
   -- A declaration with source position information
   --
   | PositionedDeclaration SourceSpan [Comment] Declaration
