@@ -139,6 +139,7 @@ jsonErrors :: Parser Bool
 jsonErrors = switch $
      long "json-errors"
   <> help "Print errors to stderr as JSON"
+
 sourceMaps :: Parser Bool
 sourceMaps = switch $
      long "source-maps"
@@ -149,6 +150,10 @@ dumpCoreFn = switch $
      long "dump-corefn"
   <> help "Dump the (functional) core representation of the compiled code at output/*/corefn.json"
 
+newCoreFn :: Parser Bool
+newCoreFn = switch $
+     long "new-corefn"
+  <> help "Does nothing unless --dump-corefn is used, in which case it enables the new CoreFn serialization"
 
 options :: Parser P.Options
 options = P.Options <$> noTco
@@ -159,6 +164,7 @@ options = P.Options <$> noTco
                     <*> (not <$> comments)
                     <*> sourceMaps
                     <*> dumpCoreFn
+                    <*> newCoreFn
 
 pscMakeOptions :: Parser PSCMakeOptions
 pscMakeOptions = PSCMakeOptions <$> many inputFile

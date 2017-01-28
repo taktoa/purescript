@@ -34,9 +34,12 @@ data Options = Options {
     -- |
     -- Dump CoreFn
   , optionsDumpCoreFn :: Bool
+    -- |
+    -- Use new format for CoreFn.
+  , optionsNewCoreFn :: Bool
   } deriving Show
 
 -- |
 -- Default make options
 defaultOptions :: Options
-defaultOptions = Options False False Nothing False False False False False
+defaultOptions = Options False False Nothing False False False False False False
