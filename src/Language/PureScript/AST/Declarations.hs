@@ -1,4 +1,7 @@
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 -- |
 -- Data types for modules and declarations
@@ -8,8 +11,14 @@ module Language.PureScript.AST.Declarations where
 import Prelude.Compat
 
 import Control.Monad.Identity
+import Control.Applicative
 
 import Data.Aeson.TH
+import qualified Data.Aeson as A
+import qualified Data.Aeson.BetterErrors as A
+
+import GHC.Generics (Generic)
+
 import qualified Data.Map as M
 import Data.Text (Text)
 
@@ -24,6 +33,8 @@ import Language.PureScript.TypeClassDictionaries
 import Language.PureScript.Comments
 import Language.PureScript.Environment
 import qualified Language.PureScript.Bundle as Bundle
+
+import Language.PureScript.Docs.Types (asQualifiedIdent)
 
 import qualified Text.Parsec as P
 
@@ -669,5 +680,46 @@ data DoNotationElement
   | PositionedDoNotationElement SourceSpan [Comment] DoNotationElement
   deriving (Show)
 
+type ModuleMap a = M.Map (Maybe ModuleName) a
+type ClassMap a = M.Map (Qualified (ProperName ClassName)) a
+type TypeMap a = M.Map (Qualified Ident) a
+
+instance (A.ToJSON a) => A.ToJSON (ModuleMap a) where
+  toJSON = A.toJSON . M.mapKeys (maybe "<null>" runModuleName)
+
+instance (A.ToJSON a) => A.ToJSON (ClassMap a) where
+  toJSON = A.toJSON . M.mapKeys (showQualified runProperName)
+
+instance (A.ToJSON a) => A.ToJSON (TypeMap a) where
+  toJSON = A.toJSON . M.mapKeys (showQualified runIdent)
+
+instance (A.FromJSON a) => A.FromJSON (ModuleMap a) where
+  parseJSON v = let t2m "<null>" = Nothing
+                    t2m owise    = Just (moduleNameFromString owise)
+                in M.mapKeys t2m <$> A.parseJSON v
+
+instance (A.FromJSON a) => A.FromJSON (ClassMap a) where
+  parseJSON = A.parseJSON >=> mapM toQual . M.toList
+    where
+      toQual (k, v) = do v' <- A.toAesonParser' asQualifiedIdent v
+                         pure (k, v')
+
+instance (A.FromJSON a) => A.FromJSON (TypeMap a) where
+  parseJSON = undefined
+
+-- instance A.ToJSON (M.Map (Maybe ModuleName) (M.Map (Qualified (ProperName ClassName)) (M.Map (Qualified Ident) NamedDict))) where
+
+$(deriveJSON (defaultOptions { sumEncoding = ObjectWithSingleField }) ''CaseAlternative)
+$(deriveJSON (defaultOptions { sumEncoding = ObjectWithSingleField }) ''DoNotationElement)
+$(deriveJSON (defaultOptions { sumEncoding = ObjectWithSingleField }) ''TypeClassDictionaryInScope)
+$(deriveJSON (defaultOptions { sumEncoding = ObjectWithSingleField }) ''ErrorMessageHint)
+$(deriveJSON (defaultOptions { sumEncoding = ObjectWithSingleField }) ''Expr)
+$(deriveJSON (defaultOptions { sumEncoding = ObjectWithSingleField }) ''NameKind)
+$(deriveJSON (defaultOptions { sumEncoding = ObjectWithSingleField }) ''Literal)
+$(deriveJSON (defaultOptions { sumEncoding = ObjectWithSingleField }) ''Binder)
+$(deriveJSON (defaultOptions { sumEncoding = ObjectWithSingleField }) ''ValueFixity)
+$(deriveJSON (defaultOptions { sumEncoding = ObjectWithSingleField }) ''TypeFixity)
+$(deriveJSON (defaultOptions { sumEncoding = ObjectWithSingleField }) ''TypeInstanceBody)
+$(deriveJSON (defaultOptions { sumEncoding = ObjectWithSingleField }) ''Declaration)
 $(deriveJSON (defaultOptions { sumEncoding = ObjectWithSingleField }) ''DeclarationRef)
 $(deriveJSON (defaultOptions { sumEncoding = ObjectWithSingleField }) ''ImportDeclarationType)

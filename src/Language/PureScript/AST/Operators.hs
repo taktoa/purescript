@@ -5,7 +5,9 @@ module Language.PureScript.AST.Operators where
 
 import Prelude.Compat
 
-import Data.Aeson ((.=))
+import Control.Applicative (empty)
+
+import Data.Aeson ((.=), (.:))
 import qualified Data.Aeson as A
 
 import Language.PureScript.Crash
@@ -49,3 +51,9 @@ instance A.ToJSON Fixity where
     A.object [ "associativity" .= associativity
              , "precedence" .= precedence
              ]
+
+instance A.FromJSON Fixity where
+  parseJSON (A.Object v) = Fixity
+                           <$> v .: "associativity"
+                           <*> v .: "precedence"
+  parseJSON _            = empty
