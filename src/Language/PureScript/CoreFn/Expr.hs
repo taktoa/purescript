@@ -1,3 +1,5 @@
+{-# LANGUAGE TemplateHaskell #-}
+
 -- |
 -- The core functional representation
 --
@@ -6,6 +8,9 @@ module Language.PureScript.CoreFn.Expr where
 import Prelude.Compat
 
 import Control.Arrow ((***))
+
+import qualified Data.Aeson as A
+import qualified Data.Aeson.TH as A
 
 import Language.PureScript.AST.Literals
 import Language.PureScript.CoreFn.Binders
@@ -65,7 +70,8 @@ data Bind a
   -- |
   -- Mutually recursive binding group for several values
   --
-  | Rec [((a, Ident), Expr a)] deriving (Show, Functor)
+  | Rec [((a, Ident), Expr a)]
+  deriving (Show, Functor)
 
 -- |
 -- A guard is just a boolean-valued expression that appears alongside a set of binders
@@ -87,7 +93,6 @@ data CaseAlternative a = CaseAlternative
   } deriving (Show)
 
 instance Functor CaseAlternative where
-
   fmap f (CaseAlternative cabs car) = CaseAlternative
     (fmap (fmap f) cabs)
     (either (Left . fmap (fmap f *** fmap f)) (Right . fmap f) car)
@@ -106,7 +111,6 @@ extractAnn (Var a _) = a
 extractAnn (Case a _ _) = a
 extractAnn (Let a _ _) = a
 
-
 -- |
 -- Modify the annotation on a term
 --
@@ -120,3 +124,7 @@ modifyAnn f (App a b c)           = App (f a) b c
 modifyAnn f (Var a b)             = Var (f a) b
 modifyAnn f (Case a b c)          = Case (f a) b c
 modifyAnn f (Let a b c)           = Let (f a) b c
+
+$(A.deriveJSON A.defaultOptions ''CaseAlternative)
+$(A.deriveJSON A.defaultOptions ''Bind)
+$(A.deriveJSON A.defaultOptions ''Expr)

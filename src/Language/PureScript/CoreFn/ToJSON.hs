@@ -4,7 +4,7 @@
 -- by third-party code generators
 --
 module Language.PureScript.CoreFn.ToJSON
-  ( modulesToJSON, moduleToJSON
+  ( moduleToJSON
   , AnnRenderer
   , defaultAnnRenderer
   , newAnnRenderer
@@ -19,6 +19,7 @@ import Data.Aeson
 import Data.Version (Version, showVersion)
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.HashMap.Lazy as LHM
 
 import Language.PureScript.CoreFn.Ann
 import Language.PureScript.AST.Literals
@@ -26,6 +27,43 @@ import Language.PureScript.Comments
 import Language.PureScript.CoreFn
 import Language.PureScript.Names
 import Language.PureScript.PSString (PSString, decodeString)
+
+moduleToJSON :: (ToJSON ann) => Version -> Module ann -> Value
+moduleToJSON ver mod = insertObject (T.pack "builtWith", toJSON (showVersion ver))
+                       $ toJSON mod
+
+insertObject :: (Text, Value) -> Value -> Value
+insertObject (k, v) (Object o) = Object $ LHM.insert k v o
+insertObject _      value      = value
+
+type AnnRenderer a = a -> Value -> Value
+
+defaultAnnRenderer :: AnnRenderer a
+defaultAnnRenderer = const id
+
+newAnnRenderer :: AnnRenderer Ann
+newAnnRenderer ann v = object [ T.pack "ann" .= annToJSON ann
+                              , T.pack "val" .= v ]
+
+annToJSON :: Ann -> Value
+annToJSON (mss, cs, mt, mm) = toJSON (sourceSpanJ, commentsJ, typeJ, metaJ)
+  where
+    sourceSpanJ = toJSON mss
+    commentsJ   = toJSON cs
+    typeJ       = toJSON mt
+    metaJ       = toJSON (metaToJSON <$> mm)
+
+metaToJSON :: Meta -> Value
+metaToJSON = go
+  where
+    go (IsConstructor ct as)  = toJSON ("Constructor", ctToJSON ct, as)
+    go IsNewtype              = toJSON "Newtype"
+    go IsTypeClassConstructor = toJSON "TCConstructor"
+    go IsForeign              = toJSON "Foreign"
+    ctToJSON ProductType = "Product"
+    ctToJSON SumType     = "Sum"
+
+{-
 
 type AnnRenderer a = a -> Value -> Value
 -- type Ann = (Maybe SourceSpan, [Comment], Maybe Type, Maybe Meta)
@@ -196,3 +234,5 @@ commentToJSON (BlockComment t) = toJSON ("Block", t)
 (|>) :: a -> (a -> b) -> b
 (|>) = flip ($)
 infixl 0 |>
+
+-}
