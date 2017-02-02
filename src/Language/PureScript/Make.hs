@@ -367,10 +367,13 @@ buildMakeActions outputDir filePathMap foreigns usePrefix =
       writeTextFile externsFile exts
     lift $ when sourceMaps $ genSourceMap dir mapFile (length prefix) mappings
     dumpCoreFn <- lift $ asks optionsDumpCoreFn
-    -- newCoreFn <- lift $ asks optionsNewCoreFn
+    newCoreFn <- lift $ asks optionsNewCoreFn
     when dumpCoreFn $ do
       let coreFnFile = outputDir </> filePath </> "corefn.json"
-      let jsonPayload = CFJ.moduleToJSON Paths.version m
+      let moduleToJSON = if newCoreFn
+                         then CFJ.oldModuleToJSON
+                         else CFJ.newModuleToJSON
+      let jsonPayload = moduleToJSON Paths.version m
       let json = Aeson.object [ (runModuleName mn, jsonPayload) ]
       lift $ writeTextFile coreFnFile (encode json)
 

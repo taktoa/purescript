@@ -227,6 +227,11 @@ dumpCoreFn = switch $
      long "dump-corefn"
   <> help "Dump the (functional) core representation of the compiled code at output/*/corefn.json"
 
+newCoreFn :: Parser Bool
+newCoreFn = switch $
+     long "new-corefn"
+  <> help "Does nothing unless --dump-corefn is used, in which case it enables the new CoreFn serialization"
+
 xcode :: Parser Bool
 xcode = switch $
      long "xcode"
@@ -246,6 +251,7 @@ options = P.Options <$> noTco
                     <*> (not <$> comments)
                     <*> sourceMaps
                     <*> dumpCoreFn
+                    <*> newCoreFn
 
 otherOptions :: Parser OtherOptions
 otherOptions = OtherOptions <$> ucns
